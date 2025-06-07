@@ -21,13 +21,13 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
     setIsLoading(true);
 
     // Simulation de vérification des identifiants
-    if (email === 'papa@inaya.zidaf.fr' && password === 'papa123') {
+    if (email === 'papa@inaya.zidaf.fr' && password === 'P@paIn@ya2025') {
       onLogin('papa');
       toast({
         title: "Connexion réussie",
         description: "Bienvenue Papa ❤️",
       });
-    } else if (email === 'maman@inaya.zidaf.fr' && password === 'maman123') {
+    } else if (email === 'maman@inaya.zidaf.fr' && password === 'M@manIn@ya2025') {
       onLogin('maman');
       toast({
         title: "Connexion réussie", 

@@ -25,6 +25,10 @@ const Index = () => {
     setActiveSection('dashboard');
   };
 
+  const handleSectionChange = (section: string) => {
+    setActiveSection(section as ActiveSection);
+  };
+
   // If not logged in, show login form
   if (!user) {
     return <LoginForm onLogin={handleLogin} />;
@@ -60,7 +64,7 @@ const Index = () => {
     <div className="min-h-screen flex bg-background">
       <Navigation 
         activeSection={activeSection}
-        setActiveSection={setActiveSection}
+        setActiveSection={handleSectionChange}
         userType={user}
         onLogout={handleLogout}
       />
