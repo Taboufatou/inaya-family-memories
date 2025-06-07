@@ -4,13 +4,14 @@ import LoginForm from '@/components/LoginForm';
 import Navigation from '@/components/Navigation';
 import Dashboard from '@/components/Dashboard';
 import PhotosSection from '@/components/PhotosSection';
+import VideosSection from '@/components/VideosSection';
 import ConsultationsSection from '@/components/ConsultationsSection';
 import JournalSection from '@/components/JournalSection';
 import EventsSection from '@/components/EventsSection';
 import Footer from '@/components/Footer';
 
 type UserType = 'papa' | 'maman' | 'admin';
-type ActiveSection = 'dashboard' | 'photos' | 'consultations' | 'journal' | 'events';
+type ActiveSection = 'dashboard' | 'photos' | 'videos' | 'consultations' | 'journal' | 'events';
 
 const Index = () => {
   const [user, setUser] = useState<UserType | null>(null);
@@ -41,6 +42,8 @@ const Index = () => {
         return <Dashboard userType={user} />;
       case 'photos':
         return <PhotosSection userType={user} />;
+      case 'videos':
+        return <VideosSection userType={user} />;
       case 'consultations':
         return <ConsultationsSection />;
       case 'journal':
