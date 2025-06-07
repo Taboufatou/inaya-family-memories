@@ -6,6 +6,7 @@ import Dashboard from '@/components/Dashboard';
 import PhotosSection from '@/components/PhotosSection';
 import ConsultationsSection from '@/components/ConsultationsSection';
 import JournalSection from '@/components/JournalSection';
+import EventsSection from '@/components/EventsSection';
 import Footer from '@/components/Footer';
 
 type UserType = 'papa' | 'maman' | 'admin';
@@ -39,22 +40,13 @@ const Index = () => {
       case 'dashboard':
         return <Dashboard userType={user} />;
       case 'photos':
-        return <PhotosSection />;
+        return <PhotosSection userType={user} />;
       case 'consultations':
         return <ConsultationsSection />;
       case 'journal':
         return <JournalSection userType={user} />;
       case 'events':
-        return (
-          <div className="p-6 text-center">
-            <h1 className="text-3xl font-heading font-bold text-foreground mb-4">
-              🎂 Événements
-            </h1>
-            <p className="text-muted-foreground">
-              Section en cours de développement
-            </p>
-          </div>
-        );
+        return <EventsSection userType={user} />;
       default:
         return <Dashboard userType={user} />;
     }

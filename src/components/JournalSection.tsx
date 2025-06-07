@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { FileText, Plus, Heart, Clock } from "lucide-react";
+import { FileText, Plus, Heart, Clock, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -47,7 +47,9 @@ const JournalSection = ({ userType }: JournalSectionProps) => {
   ]);
 
   const [newEntry, setNewEntry] = useState('');
+  const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const handleAddEntry = () => {
@@ -78,12 +80,46 @@ const JournalSection = ({ userType }: JournalSectionProps) => {
     });
   };
 
+  const handleEditEntry = () => {
+    if (!editingEntry || !editingEntry.content.trim()) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez écrire quelque chose dans votre note",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setEntries(entries.map(entry => 
+      entry.id === editingEntry.id ? editingEntry : entry
+    ));
+    setEditingEntry(null);
+    setIsEditDialogOpen(false);
+    
+    toast({
+      title: "Note modifiée",
+      description: "Votre note a été modifiée avec succès ✨"
+    });
+  };
+
+  const handleDeleteEntry = (entryId: string) => {
+    setEntries(entries.filter(entry => entry.id !== entryId));
+    toast({
+      title: "Note supprimée",
+      description: "La note a été supprimée avec succès"
+    });
+  };
+
   const handleLike = (entryId: string) => {
     setEntries(entries.map(entry => 
       entry.id === entryId 
         ? { ...entry, likes: entry.likes + 1 }
         : entry
     ));
+  };
+
+  const canModify = (entry: JournalEntry) => {
+    return userType === 'admin' || entry.author === userType;
   };
 
   const getAuthorDisplay = (author: 'papa' | 'maman') => {
@@ -138,6 +174,36 @@ const JournalSection = ({ userType }: JournalSectionProps) => {
         )}
       </div>
 
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Modifier la note</DialogTitle>
+            <DialogDescription>
+              Modifiez votre note du journal
+            </DialogDescription>
+          </DialogHeader>
+          
+          {editingEntry && (
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-foreground">Votre note</label>
+                <Textarea
+                  placeholder="Écrivez vos pensées, une anecdote, un moment spécial..."
+                  value={editingEntry.content}
+                  onChange={(e) => setEditingEntry({...editingEntry, content: e.target.value})}
+                  rows={6}
+                />
+              </div>
+              
+              <Button onClick={handleEditEntry} className="w-full gradient-primary text-white">
+                Sauvegarder les modifications
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Journal Entries */}
       <div className="space-y-6">
         {entries.map((entry, index) => (
@@ -168,9 +234,34 @@ const JournalSection = ({ userType }: JournalSectionProps) => {
                 </button>
               </div>
               
-              <div className="bg-muted/20 rounded-lg p-4">
+              <div className="bg-muted/20 rounded-lg p-4 mb-4">
                 <p className="text-foreground leading-relaxed whitespace-pre-wrap">{entry.content}</p>
               </div>
+
+              {canModify(entry) && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setEditingEntry(entry);
+                      setIsEditDialogOpen(true);
+                    }}
+                  >
+                    <Edit className="h-4 w-4 mr-1" />
+                    Modifier
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleDeleteEntry(entry.id)}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Supprimer
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         ))}
