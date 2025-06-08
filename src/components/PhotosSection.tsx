@@ -1,12 +1,13 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Camera, Plus, Heart, MessageCircle, Upload, Edit, Trash2 } from "lucide-react";
+import { Camera, Plus, Heart, MessageCircle, Upload, Edit, Trash2, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import HistoryFilter, { FilterOptions } from './HistoryFilter';
 
 interface Photo {
   id: string;
@@ -47,6 +48,13 @@ const PhotosSection = ({ userType }: PhotosSectionProps) => {
     }
   ]);
 
+  const [filteredPhotos, setFilteredPhotos] = useState<Photo[]>(photos);
+  const [filters, setFilters] = useState<FilterOptions>({
+    dateRange: 'all',
+    author: 'all',
+    searchTerm: '',
+  });
+
   const [newPhoto, setNewPhoto] = useState({
     title: '',
     description: '',
@@ -57,6 +65,54 @@ const PhotosSection = ({ userType }: PhotosSectionProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { toast } = useToast();
+
+  // Appliquer les filtres
+  useEffect(() => {
+    let filtered = [...photos];
+
+    // Filtre par auteur
+    if (filters.author !== 'all') {
+      filtered = filtered.filter(photo => photo.author === filters.author);
+    }
+
+    // Filtre par terme de recherche
+    if (filters.searchTerm) {
+      filtered = filtered.filter(photo => 
+        photo.title.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
+        photo.description.toLowerCase().includes(filters.searchTerm.toLowerCase())
+      );
+    }
+
+    // Filtre par période
+    if (filters.dateRange !== 'all') {
+      const now = new Date();
+      const cutoffDate = new Date();
+      
+      switch (filters.dateRange) {
+        case 'week':
+          cutoffDate.setDate(now.getDate() - 7);
+          break;
+        case 'month':
+          cutoffDate.setMonth(now.getMonth() - 1);
+          break;
+        case 'year':
+          cutoffDate.setFullYear(now.getFullYear() - 1);
+          break;
+      }
+      
+      filtered = filtered.filter(photo => new Date(photo.date) >= cutoffDate);
+    }
+
+    // Filtre par dates personnalisées
+    if (filters.startDate) {
+      filtered = filtered.filter(photo => new Date(photo.date) >= new Date(filters.startDate!));
+    }
+    if (filters.endDate) {
+      filtered = filtered.filter(photo => new Date(photo.date) <= new Date(filters.endDate!));
+    }
+
+    setFilteredPhotos(filtered);
+  }, [photos, filters]);
 
   const handleAddPhoto = () => {
     if (!newPhoto.title.trim()) {
@@ -127,6 +183,21 @@ const PhotosSection = ({ userType }: PhotosSectionProps) => {
     ));
   };
 
+  const handleDownload = (photo: Photo) => {
+    // Simuler le téléchargement
+    const link = document.createElement('a');
+    link.href = photo.url;
+    link.download = `${photo.title}.jpg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast({
+      title: "Téléchargement lancé",
+      description: `${photo.title} est en cours de téléchargement`
+    });
+  };
+
   const canModify = (photo: Photo) => {
     return userType === 'admin' || photo.author === userType;
   };
@@ -139,7 +210,7 @@ const PhotosSection = ({ userType }: PhotosSectionProps) => {
             📸 Espace Photos
           </h1>
           <p className="text-muted-foreground">
-            Tous les précieux moments d'Inaya
+            Tous les précieux moments d'Inaya ({filteredPhotos.length} photos)
           </p>
         </div>
         
@@ -197,6 +268,12 @@ const PhotosSection = ({ userType }: PhotosSectionProps) => {
         )}
       </div>
 
+      {/* Filtres d'historique */}
+      <HistoryFilter 
+        currentFilters={filters}
+        onFilterChange={setFilters}
+      />
+
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
@@ -237,7 +314,7 @@ const PhotosSection = ({ userType }: PhotosSectionProps) => {
 
       {/* Photos Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {photos.map((photo, index) => (
+        {filteredPhotos.map((photo, index) => (
           <Card key={photo.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 animate-fade-in-up border-0" style={{ animationDelay: `${index * 100}ms` }}>
             <div className="aspect-square bg-muted relative overflow-hidden">
               <img 
@@ -257,7 +334,7 @@ const PhotosSection = ({ userType }: PhotosSectionProps) => {
               <h3 className="font-semibold text-foreground mb-1">{photo.title}</h3>
               <p className="text-sm text-muted-foreground mb-3">{photo.description}</p>
               
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center justify-between text-sm mb-3">
                 <span className="text-muted-foreground">{photo.date}</span>
                 <div className="flex items-center gap-3">
                   <button 
@@ -274,34 +351,51 @@ const PhotosSection = ({ userType }: PhotosSectionProps) => {
                 </div>
               </div>
               
-              {canModify(photo) && (
-                <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      setEditingPhoto(photo);
-                      setIsEditDialogOpen(true);
-                    }}
-                  >
-                    <Edit className="h-4 w-4 mr-1" />
-                    Modifier
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleDeletePhoto(photo.id)}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <Trash2 className="h-4 w-4 mr-1" />
-                    Supprimer
-                  </Button>
-                </div>
-              )}
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleDownload(photo)}
+                  className="flex-1"
+                >
+                  <Download className="h-4 w-4 mr-1" />
+                  Télécharger
+                </Button>
+                
+                {canModify(photo) && (
+                  <>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setEditingPhoto(photo);
+                        setIsEditDialogOpen(true);
+                      }}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDeletePhoto(photo.id)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </>
+                )}
+              </div>
             </CardContent>
           </Card>
         ))}
       </div>
+
+      {filteredPhotos.length === 0 && (
+        <div className="text-center py-12">
+          <Camera className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+          <p className="text-muted-foreground">Aucune photo trouvée avec ces filtres</p>
+        </div>
+      )}
     </div>
   );
 };

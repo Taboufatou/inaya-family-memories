@@ -19,8 +19,39 @@ $user = getUserFromToken($token);
 switch ($method) {
     case 'GET':
         try {
-            $stmt = $pdo->prepare("SELECT * FROM photos ORDER BY date_created DESC");
-            $stmt->execute();
+            $filters = [];
+            $params = [];
+            $whereClause = "";
+
+            // Filtres de recherche
+            if (!empty($_GET['search'])) {
+                $filters[] = "(title ILIKE ? OR description ILIKE ?)";
+                $searchTerm = '%' . $_GET['search'] . '%';
+                $params[] = $searchTerm;
+                $params[] = $searchTerm;
+            }
+
+            if (!empty($_GET['author']) && $_GET['author'] !== 'all') {
+                $filters[] = "author = ?";
+                $params[] = $_GET['author'];
+            }
+
+            if (!empty($_GET['start_date'])) {
+                $filters[] = "date_created >= ?";
+                $params[] = $_GET['start_date'];
+            }
+
+            if (!empty($_GET['end_date'])) {
+                $filters[] = "date_created <= ?";
+                $params[] = $_GET['end_date'] . ' 23:59:59';
+            }
+
+            if (!empty($filters)) {
+                $whereClause = " WHERE " . implode(" AND ", $filters);
+            }
+
+            $stmt = $pdo->prepare("SELECT * FROM photos" . $whereClause . " ORDER BY date_created DESC");
+            $stmt->execute($params);
             $photos = $stmt->fetchAll();
             echo json_encode($photos);
         } catch (PDOException $e) {

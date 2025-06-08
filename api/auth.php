@@ -21,7 +21,7 @@ if ($method === 'POST') {
         $user = $stmt->fetch();
 
         if ($user && password_verify($password, $user['password'])) {
-            // Dans un vrai projet, générez un vrai JWT
+            // Générer un token simple
             $token = $user['user_type'] . '_token';
             
             echo json_encode([

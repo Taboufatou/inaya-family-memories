@@ -1,24 +1,24 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Video, Plus, Heart, Clock, Edit, Trash2, Play, Calendar as CalendarIcon } from "lucide-react";
+import { Video, Plus, Heart, MessageCircle, Upload, Edit, Trash2, Download, Play } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
+import HistoryFilter, { FilterOptions } from './HistoryFilter';
 
-interface VideoEntry {
+interface VideoItem {
   id: string;
   title: string;
   description: string;
   url: string;
-  date: Date;
-  author: 'papa' | 'maman';
+  date: string;
   likes: number;
-  category: string;
+  comments: string[];
+  author: 'papa' | 'maman';
+  duration?: string;
 }
 
 interface VideosSectionProps {
@@ -26,69 +26,117 @@ interface VideosSectionProps {
 }
 
 const VideosSection = ({ userType }: VideosSectionProps) => {
-  const [videos, setVideos] = useState<VideoEntry[]>([
+  const [videos, setVideos] = useState<VideoItem[]>([
     {
       id: '1',
-      title: 'Premiers pas d\'Inaya',
-      description: 'Elle marche toute seule pour la première fois ! ❤️',
-      url: 'https://example.com/video1.mp4',
-      date: new Date('2024-12-01'),
-      author: 'maman',
-      likes: 12,
-      category: 'Premiers pas'
+      title: 'Premiers pas',
+      description: 'Inaya fait ses premiers pas ! ✨',
+      url: '/placeholder.svg',
+      date: '2024-12-05',
+      likes: 8,
+      comments: ['Incroyable ! - Papa', 'Notre petite danseuse - Maman'],
+      author: 'papa',
+      duration: '0:45'
     },
     {
       id: '2',
-      title: 'Première berceuse',
-      description: 'Papa chante une berceuse à Inaya avant le dodo 🎵',
-      url: 'https://example.com/video2.mp4',
-      date: new Date('2024-11-25'),
-      author: 'papa',
-      likes: 8,
-      category: 'Moments tendres'
+      title: 'Rires aux éclats',
+      description: 'Moment de bonheur pur',
+      url: '/placeholder.svg',
+      date: '2024-11-30',
+      likes: 12,
+      comments: ['Trop mignon - Maman'],
+      author: 'maman',
+      duration: '1:23'
     }
   ]);
+
+  const [filteredVideos, setFilteredVideos] = useState<VideoItem[]>(videos);
+  const [filters, setFilters] = useState<FilterOptions>({
+    dateRange: 'all',
+    author: 'all',
+    searchTerm: '',
+  });
 
   const [newVideo, setNewVideo] = useState({
     title: '',
     description: '',
-    url: '',
-    category: ''
+    file: null as File | null
   });
 
-  const [editingVideo, setEditingVideo] = useState<VideoEntry | null>(null);
+  const [editingVideo, setEditingVideo] = useState<VideoItem | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { toast } = useToast();
 
+  // Appliquer les filtres
+  useEffect(() => {
+    let filtered = [...videos];
+
+    if (filters.author !== 'all') {
+      filtered = filtered.filter(video => video.author === filters.author);
+    }
+
+    if (filters.searchTerm) {
+      filtered = filtered.filter(video => 
+        video.title.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
+        video.description.toLowerCase().includes(filters.searchTerm.toLowerCase())
+      );
+    }
+
+    if (filters.dateRange !== 'all') {
+      const now = new Date();
+      const cutoffDate = new Date();
+      
+      switch (filters.dateRange) {
+        case 'week':
+          cutoffDate.setDate(now.getDate() - 7);
+          break;
+        case 'month':
+          cutoffDate.setMonth(now.getMonth() - 1);
+          break;
+        case 'year':
+          cutoffDate.setFullYear(now.getFullYear() - 1);
+          break;
+      }
+      
+      filtered = filtered.filter(video => new Date(video.date) >= cutoffDate);
+    }
+
+    if (filters.startDate) {
+      filtered = filtered.filter(video => new Date(video.date) >= new Date(filters.startDate!));
+    }
+    if (filters.endDate) {
+      filtered = filtered.filter(video => new Date(video.date) <= new Date(filters.endDate!));
+    }
+
+    setFilteredVideos(filtered);
+  }, [videos, filters]);
+
   const handleAddVideo = () => {
-    if (!newVideo.title.trim() || !newVideo.url.trim()) {
+    if (!newVideo.title.trim()) {
       toast({
         title: "Erreur",
-        description: "Veuillez remplir au moins le titre et l'URL de la vidéo",
+        description: "Veuillez entrer un titre pour la vidéo",
         variant: "destructive"
       });
       return;
     }
 
-    const video: VideoEntry = {
+    const video: VideoItem = {
       id: Date.now().toString(),
       title: newVideo.title,
       description: newVideo.description,
-      url: newVideo.url,
-      date: new Date(),
-      author: userType as 'papa' | 'maman',
+      url: '/placeholder.svg',
+      date: new Date().toISOString().split('T')[0],
       likes: 0,
-      category: newVideo.category || 'Général'
+      comments: [],
+      author: userType as 'papa' | 'maman',
+      duration: '0:00'
     };
 
     setVideos([video, ...videos]);
-    setNewVideo({
-      title: '',
-      description: '',
-      url: '',
-      category: ''
-    });
+    setNewVideo({ title: '', description: '', file: null });
     setIsDialogOpen(false);
     
     toast({
@@ -101,7 +149,7 @@ const VideosSection = ({ userType }: VideosSectionProps) => {
     if (!editingVideo || !editingVideo.title.trim()) {
       toast({
         title: "Erreur",
-        description: "Veuillez remplir au moins le titre",
+        description: "Veuillez entrer un titre pour la vidéo",
         variant: "destructive"
       });
       return;
@@ -135,12 +183,22 @@ const VideosSection = ({ userType }: VideosSectionProps) => {
     ));
   };
 
-  const canModify = (video: VideoEntry) => {
-    return userType === 'admin' || video.author === userType;
+  const handleDownload = (video: VideoItem) => {
+    const link = document.createElement('a');
+    link.href = video.url;
+    link.download = `${video.title}.mp4`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast({
+      title: "Téléchargement lancé",
+      description: `${video.title} est en cours de téléchargement`
+    });
   };
 
-  const getAuthorDisplay = (author: 'papa' | 'maman') => {
-    return author === 'papa' ? 'Papa ❤️' : 'Maman ❤️';
+  const canModify = (video: VideoItem) => {
+    return userType === 'admin' || video.author === userType;
   };
 
   return (
@@ -148,10 +206,10 @@ const VideosSection = ({ userType }: VideosSectionProps) => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-heading font-bold text-foreground mb-2">
-            🎥 Vidéos
+            🎬 Espace Vidéos
           </h1>
           <p className="text-muted-foreground">
-            Les plus beaux moments d'Inaya en vidéo
+            Tous les moments précieux d'Inaya en mouvement ({filteredVideos.length} vidéos)
           </p>
         </div>
         
@@ -165,37 +223,19 @@ const VideosSection = ({ userType }: VideosSectionProps) => {
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Ajouter une vidéo</DialogTitle>
+                <DialogTitle>Ajouter une nouvelle vidéo</DialogTitle>
                 <DialogDescription>
-                  Partagez un moment spécial d'Inaya en vidéo
+                  Partagez un moment précieux d'Inaya en mouvement
                 </DialogDescription>
               </DialogHeader>
               
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium text-foreground">Titre *</label>
+                  <label className="text-sm font-medium text-foreground">Titre</label>
                   <Input
                     placeholder="Ex: Premiers pas"
                     value={newVideo.title}
                     onChange={(e) => setNewVideo({...newVideo, title: e.target.value})}
-                  />
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium text-foreground">URL de la vidéo *</label>
-                  <Input
-                    placeholder="https://..."
-                    value={newVideo.url}
-                    onChange={(e) => setNewVideo({...newVideo, url: e.target.value})}
-                  />
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium text-foreground">Catégorie</label>
-                  <Input
-                    placeholder="Ex: Premiers pas, Moments tendres..."
-                    value={newVideo.category}
-                    onChange={(e) => setNewVideo({...newVideo, category: e.target.value})}
                   />
                 </div>
                 
@@ -205,8 +245,17 @@ const VideosSection = ({ userType }: VideosSectionProps) => {
                     placeholder="Décrivez ce moment spécial..."
                     value={newVideo.description}
                     onChange={(e) => setNewVideo({...newVideo, description: e.target.value})}
-                    rows={3}
                   />
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium text-foreground">Vidéo</label>
+                  <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary transition-colors">
+                    <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground">
+                      Cliquez pour sélectionner une vidéo
+                    </p>
+                  </div>
                 </div>
                 
                 <Button onClick={handleAddVideo} className="w-full gradient-primary text-white">
@@ -217,6 +266,12 @@ const VideosSection = ({ userType }: VideosSectionProps) => {
           </Dialog>
         )}
       </div>
+
+      {/* Filtres d'historique */}
+      <HistoryFilter 
+        currentFilters={filters}
+        onFilterChange={setFilters}
+      />
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
@@ -231,29 +286,11 @@ const VideosSection = ({ userType }: VideosSectionProps) => {
           {editingVideo && (
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-foreground">Titre *</label>
+                <label className="text-sm font-medium text-foreground">Titre</label>
                 <Input
                   placeholder="Ex: Premiers pas"
                   value={editingVideo.title}
                   onChange={(e) => setEditingVideo({...editingVideo, title: e.target.value})}
-                />
-              </div>
-              
-              <div>
-                <label className="text-sm font-medium text-foreground">URL de la vidéo *</label>
-                <Input
-                  placeholder="https://..."
-                  value={editingVideo.url}
-                  onChange={(e) => setEditingVideo({...editingVideo, url: e.target.value})}
-                />
-              </div>
-              
-              <div>
-                <label className="text-sm font-medium text-foreground">Catégorie</label>
-                <Input
-                  placeholder="Ex: Premiers pas, Moments tendres..."
-                  value={editingVideo.category}
-                  onChange={(e) => setEditingVideo({...editingVideo, category: e.target.value})}
                 />
               </div>
               
@@ -263,7 +300,6 @@ const VideosSection = ({ userType }: VideosSectionProps) => {
                   placeholder="Décrivez ce moment spécial..."
                   value={editingVideo.description}
                   onChange={(e) => setEditingVideo({...editingVideo, description: e.target.value})}
-                  rows={3}
                 />
               </div>
               
@@ -275,39 +311,37 @@ const VideosSection = ({ userType }: VideosSectionProps) => {
         </DialogContent>
       </Dialog>
 
-      {/* Videos List */}
+      {/* Videos Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {videos.map((video, index) => (
-          <Card key={video.id} className="hover:shadow-lg transition-all duration-300 animate-fade-in-up border-0" style={{ animationDelay: `${index * 100}ms` }}>
-            <CardContent className="p-0">
-              {/* Video Thumbnail/Player */}
-              <div className="relative aspect-video bg-muted rounded-t-lg overflow-hidden">
-                <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                  <Button variant="ghost" size="icon" className="h-16 w-16 rounded-full bg-white/90 hover:bg-white text-black">
-                    <Play className="h-8 w-8 ml-1" />
-                  </Button>
-                </div>
-                <Video className="absolute top-4 right-4 h-6 w-6 text-white" />
+        {filteredVideos.map((video, index) => (
+          <Card key={video.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 animate-fade-in-up border-0" style={{ animationDelay: `${index * 100}ms` }}>
+            <div className="aspect-video bg-muted relative overflow-hidden">
+              <img 
+                src={video.url} 
+                alt={video.title}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                <Play className="h-12 w-12 text-white" />
               </div>
+              <div className="absolute top-2 right-2 bg-black/20 backdrop-blur-sm rounded-full p-2">
+                <Video className="h-4 w-4 text-white" />
+              </div>
+              <div className="absolute top-2 left-2 bg-black/20 backdrop-blur-sm rounded px-2 py-1">
+                <span className="text-xs text-white">{video.author === 'papa' ? 'Papa' : 'Maman'}</span>
+              </div>
+              <div className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-sm rounded px-2 py-1">
+                <span className="text-xs text-white">{video.duration}</span>
+              </div>
+            </div>
+            
+            <CardContent className="p-4">
+              <h3 className="font-semibold text-foreground mb-1">{video.title}</h3>
+              <p className="text-sm text-muted-foreground mb-3">{video.description}</p>
               
-              <div className="p-4 space-y-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-foreground mb-1">{video.title}</h3>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                      <span className="px-2 py-1 bg-primary/10 text-primary rounded-full">
-                        {video.category}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                      <Clock className="h-4 w-4" />
-                      {format(video.date, "dd/MM/yyyy", { locale: fr })}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Par {getAuthorDisplay(video.author)}
-                    </p>
-                  </div>
-                  
+              <div className="flex items-center justify-between text-sm mb-3">
+                <span className="text-muted-foreground">{video.date}</span>
+                <div className="flex items-center gap-3">
                   <button 
                     onClick={() => handleLike(video.id)}
                     className="flex items-center gap-1 text-red-500 hover:text-red-600 transition-colors"
@@ -315,16 +349,26 @@ const VideosSection = ({ userType }: VideosSectionProps) => {
                     <Heart className="h-4 w-4" />
                     {video.likes}
                   </button>
-                </div>
-                
-                {video.description && (
-                  <div className="bg-muted/30 rounded-lg p-3">
-                    <p className="text-foreground text-sm">{video.description}</p>
+                  <div className="flex items-center gap-1 text-muted-foreground">
+                    <MessageCircle className="h-4 w-4" />
+                    {video.comments.length}
                   </div>
-                )}
-
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleDownload(video)}
+                  className="flex-1"
+                >
+                  <Download className="h-4 w-4 mr-1" />
+                  Télécharger
+                </Button>
+                
                 {canModify(video) && (
-                  <div className="flex items-center gap-2 pt-2 border-t border-border">
+                  <>
                     <Button
                       size="sm"
                       variant="outline"
@@ -333,8 +377,7 @@ const VideosSection = ({ userType }: VideosSectionProps) => {
                         setIsEditDialogOpen(true);
                       }}
                     >
-                      <Edit className="h-4 w-4 mr-1" />
-                      Modifier
+                      <Edit className="h-4 w-4" />
                     </Button>
                     <Button
                       size="sm"
@@ -342,10 +385,9 @@ const VideosSection = ({ userType }: VideosSectionProps) => {
                       onClick={() => handleDeleteVideo(video.id)}
                       className="text-red-600 hover:text-red-700"
                     >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      Supprimer
+                      <Trash2 className="h-4 w-4" />
                     </Button>
-                  </div>
+                  </>
                 )}
               </div>
             </CardContent>
@@ -353,21 +395,11 @@ const VideosSection = ({ userType }: VideosSectionProps) => {
         ))}
       </div>
 
-      {videos.length === 0 && (
-        <Card className="border-2 border-dashed border-border">
-          <CardContent className="p-12 text-center">
-            <Video className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">Aucune vidéo pour le moment</h3>
-            <p className="text-muted-foreground mb-4">
-              Commencez à partager les premiers moments d'Inaya en vidéo
-            </p>
-            {userType !== 'admin' && (
-              <Button onClick={() => setIsDialogOpen(true)} className="gradient-primary text-white">
-                Ajouter la première vidéo
-              </Button>
-            )}
-          </CardContent>
-        </Card>
+      {filteredVideos.length === 0 && (
+        <div className="text-center py-12">
+          <Video className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+          <p className="text-muted-foreground">Aucune vidéo trouvée avec ces filtres</p>
+        </div>
       )}
     </div>
   );

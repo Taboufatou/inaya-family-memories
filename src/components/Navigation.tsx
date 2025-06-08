@@ -1,7 +1,10 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { Home, Camera, Heart, BookOpen, Calendar, Video, LogOut } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Home, Camera, Video, Heart, FileText, Calendar, LogOut, Settings } from "lucide-react";
+import PasswordChangeDialog from './PasswordChangeDialog';
 
 interface NavigationProps {
   activeSection: string;
@@ -16,74 +19,59 @@ const Navigation = ({ activeSection, setActiveSection, userType, onLogout }: Nav
     { id: 'photos', label: 'Photos', icon: Camera },
     { id: 'videos', label: 'Vidéos', icon: Video },
     { id: 'consultations', label: 'Consultations', icon: Heart },
-    { id: 'journal', label: 'Journal', icon: BookOpen },
-    { id: 'events', label: 'Évènements', icon: Calendar },
+    { id: 'journal', label: 'Journal', icon: FileText },
+    { id: 'events', label: 'Événements', icon: Calendar },
   ];
 
-  const getUserDisplay = () => {
-    switch (userType) {
-      case 'papa':
-        return 'Bienvenue Papa ❤️';
-      case 'maman':
-        return 'Bienvenue Maman ❤️';
-      case 'admin':
-        return 'Admin';
-      default:
-        return 'Utilisateur';
-    }
-  };
-
   return (
-    <div className="w-64 bg-card border-r border-border flex flex-col">
-      {/* Header */}
-      <div className="p-6 border-b border-border">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center">
-            <span className="text-white font-bold text-lg">I</span>
-          </div>
-          <div>
-            <h1 className="font-heading font-bold text-lg text-foreground">INAYASPACE</h1>
-            <p className="text-sm text-muted-foreground">{getUserDisplay()}</p>
-          </div>
-        </div>
+    <Card className="w-64 h-full bg-card border-r border-border flex flex-col">
+      <div className="p-6">
+        <h2 className="text-xl font-heading font-bold text-foreground mb-1">
+          🪐 INAYASPACE
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          {userType === 'papa' ? 'Papa' : userType === 'maman' ? 'Maman' : 'Administrateur'}
+        </p>
       </div>
 
-      {/* Navigation Menu */}
+      <Separator />
+
       <nav className="flex-1 p-4 space-y-2">
         {menuItems.map((item) => {
           const Icon = item.icon;
-          const isActive = activeSection === item.id;
-          
           return (
             <Button
               key={item.id}
-              variant={isActive ? "default" : "ghost"}
-              className={`w-full justify-start gap-3 ${
-                isActive 
-                  ? "bg-primary text-primary-foreground" 
-                  : "hover:bg-muted text-muted-foreground hover:text-foreground"
+              variant={activeSection === item.id ? "default" : "ghost"}
+              className={`w-full justify-start ${
+                activeSection === item.id
+                  ? "bg-primary text-primary-foreground"
+                  : "hover:bg-muted"
               }`}
               onClick={() => setActiveSection(item.id)}
             >
-              <Icon className="h-5 w-5" />
+              <Icon className="h-4 w-4 mr-3" />
               {item.label}
             </Button>
           );
         })}
       </nav>
 
-      {/* Logout Button */}
-      <div className="p-4 border-t border-border">
+      <Separator />
+
+      <div className="p-4 space-y-2">
+        <PasswordChangeDialog userType={userType} />
+        
         <Button
-          variant="outline"
-          className="w-full gap-2 text-muted-foreground hover:text-foreground"
+          variant="ghost"
+          className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
           onClick={onLogout}
         >
-          <LogOut className="h-4 w-4" />
-          Déconnexion
+          <LogOut className="h-4 w-4 mr-3" />
+          Se déconnecter
         </Button>
       </div>
-    </div>
+    </Card>
   );
 };
 

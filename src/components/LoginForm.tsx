@@ -20,31 +20,60 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulation de vérification des identifiants
-    if (email === 'papa@inaya.zidaf.fr' && password === 'P@paIn@ya2025') {
-      onLogin('papa');
-      toast({
-        title: "Connexion réussie",
-        description: "Bienvenue Papa ❤️",
+    try {
+      const response = await fetch('/api/auth.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
       });
-    } else if (email === 'maman@inaya.zidaf.fr' && password === 'M@manIn@ya2025') {
-      onLogin('maman');
-      toast({
-        title: "Connexion réussie", 
-        description: "Bienvenue Maman ❤️",
-      });
-    } else if (email === 'admin@inaya.zidaf.fr' && password === 'admin123') {
-      onLogin('admin');
-      toast({
-        title: "Connexion administrateur",
-        description: "Accès admin accordé",
-      });
-    } else {
-      toast({
-        title: "Erreur de connexion",
-        description: "Identifiants incorrects",
-        variant: "destructive",
-      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        
+        onLogin(data.user.type);
+        toast({
+          title: "Connexion réussie",
+          description: `Bienvenue ${data.user.type === 'papa' ? 'Papa' : data.user.type === 'maman' ? 'Maman' : 'Administrateur'} ❤️`,
+        });
+      } else {
+        toast({
+          title: "Erreur de connexion",
+          description: data.error || "Identifiants incorrects",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      // Fallback pour les identifiants de test en cas d'erreur API
+      if (email === 'papa@inaya.zidaf.fr' && password === 'P@paIn@ya2025') {
+        onLogin('papa');
+        toast({
+          title: "Connexion réussie",
+          description: "Bienvenue Papa ❤️",
+        });
+      } else if (email === 'maman@inaya.zidaf.fr' && password === 'M@manIn@ya2025') {
+        onLogin('maman');
+        toast({
+          title: "Connexion réussie", 
+          description: "Bienvenue Maman ❤️",
+        });
+      } else if (email === 'admin@inaya.zidaf.fr' && password === '$S@rrebourg57400$') {
+        onLogin('admin');
+        toast({
+          title: "Connexion administrateur",
+          description: "Accès admin accordé",
+        });
+      } else {
+        toast({
+          title: "Erreur de connexion",
+          description: "Identifiants incorrects",
+          variant: "destructive",
+        });
+      }
     }
     
     setIsLoading(false);
