@@ -39,7 +39,7 @@ const Index = () => {
   const renderActiveSection = () => {
     switch (activeSection) {
       case 'dashboard':
-        return <Dashboard userType={user} />;
+        return <Dashboard userType={user} onSectionChange={handleSectionChange} />;
       case 'photos':
         return <PhotosSection userType={user} />;
       case 'videos':
@@ -51,7 +51,7 @@ const Index = () => {
       case 'events':
         return <EventsSection userType={user} />;
       default:
-        return <Dashboard userType={user} />;
+        return <Dashboard userType={user} onSectionChange={handleSectionChange} />;
     }
   };
 

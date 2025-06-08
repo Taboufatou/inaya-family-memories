@@ -1,18 +1,20 @@
 
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Camera, Heart, FileText, Calendar, Star, Sparkles } from "lucide-react";
+import { Camera, Heart, FileText, Calendar, Star, Sparkles, Video } from "lucide-react";
 
 interface DashboardProps {
   userType: 'papa' | 'maman' | 'admin';
+  onSectionChange?: (section: string) => void;
 }
 
-const Dashboard = ({ userType }: DashboardProps) => {
+const Dashboard = ({ userType, onSectionChange }: DashboardProps) => {
   const stats = [
-    { label: 'Photos', value: '127', icon: Camera, color: 'text-primary' },
-    { label: 'Consultations', value: '8', icon: Heart, color: 'text-red-500' },
-    { label: 'Entrées journal', value: '23', icon: FileText, color: 'text-purple-500' },
-    { label: 'Événements', value: '5', icon: Calendar, color: 'text-blue-500' },
+    { label: 'Photos', value: '127', icon: Camera, color: 'text-primary', section: 'photos' },
+    { label: 'Vidéos', value: '15', icon: Video, color: 'text-purple-500', section: 'videos' },
+    { label: 'Consultations', value: '8', icon: Heart, color: 'text-red-500', section: 'consultations' },
+    { label: 'Entrées journal', value: '23', icon: FileText, color: 'text-purple-500', section: 'journal' },
+    { label: 'Événements', value: '5', icon: Calendar, color: 'text-blue-500', section: 'events' },
   ];
 
   const recentActivities = [
@@ -36,6 +38,12 @@ const Dashboard = ({ userType }: DashboardProps) => {
     },
   ];
 
+  const handleCardClick = (section: string) => {
+    if (onSectionChange) {
+      onSectionChange(section);
+    }
+  };
+
   return (
     <div className="p-6 space-y-6 animate-fade-in-up">
       <div className="relative">
@@ -57,7 +65,12 @@ const Dashboard = ({ userType }: DashboardProps) => {
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
-            <Card key={stat.label} className="relative overflow-hidden hover:shadow-lg transition-all duration-300 animate-fade-in-up border-0 bg-gradient-to-br from-card to-muted/20" style={{ animationDelay: `${index * 100}ms` }}>
+            <Card 
+              key={stat.label} 
+              className="relative overflow-hidden hover:shadow-lg transition-all duration-300 animate-fade-in-up border-0 bg-gradient-to-br from-card to-muted/20 cursor-pointer hover:scale-105" 
+              style={{ animationDelay: `${index * 100}ms` }}
+              onClick={() => handleCardClick(stat.section)}
+            >
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
