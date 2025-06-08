@@ -11,7 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
 
 // Configuration de la base de données avec les nouveaux paramètres
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'yepe078_inaya');
+define('DB_NAME', 'yepe0708_inaya');
 define('DB_USER', 'Taboufatou');
 define('DB_PASS', '$S@rrebourg57400$');
 

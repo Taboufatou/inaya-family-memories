@@ -33,7 +33,7 @@ npm run build
 
 ### Connexion à votre base de données O2Switch :
 - **Host** : localhost
-- **Database** : yepe078_inaya
+- **Database** : yepe0708_inaya
 - **User** : Taboufatou
 - **Password** : $S@rrebourg57400$
 
@@ -161,8 +161,42 @@ curl https://inaya.zidaf.fr/api/photos.php \
 - Logs PHP : via le panel O2Switch
 - Logs de l'application : dans le navigateur (Console)
 
+## 11. Synchronisation avec GitHub
+
+### 1. Connexion à GitHub depuis Lovable :
+1. Cliquez sur le bouton GitHub en haut à droite de l'interface Lovable
+2. Autorisez l'application Lovable GitHub
+3. Sélectionnez votre compte/organisation GitHub
+4. Créez un nouveau repository ou connectez-vous à un existant
+
+### 2. Synchronisation automatique :
+- Toutes les modifications dans Lovable sont automatiquement synchronisées avec GitHub
+- Les modifications faites directement sur GitHub sont synchronisées vers Lovable
+- La synchronisation est bidirectionnelle et en temps réel
+
+### 3. Déploiement depuis GitHub :
+Une fois le code synchronisé avec GitHub, vous pouvez :
+- Cloner le repository localement
+- Faire des modifications avec votre IDE préféré
+- Utiliser GitHub Actions pour le déploiement automatique
+- Continuer à utiliser Lovable pour le développement
+
+### 4. Structure du repository GitHub :
+```
+votre-repo/
+├── src/                 # Code source React
+├── public/             # Fichiers publics
+├── api/                # Endpoints PHP
+├── database/           # Scripts SQL
+├── deployment/         # Fichiers de déploiement
+├── package.json        # Dépendances Node.js
+├── vite.config.ts      # Configuration Vite
+└── README.md          # Documentation
+```
+
 ## Contact support
 
 En cas de problème technique persistant :
 - Support O2Switch : https://www.o2switch.fr/support/
 - Documentation O2Switch : https://faq.o2switch.fr/
+- Support Lovable : https://docs.lovable.dev/
