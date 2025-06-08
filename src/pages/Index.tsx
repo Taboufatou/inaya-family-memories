@@ -45,7 +45,7 @@ const Index = () => {
       case 'videos':
         return <VideosSection userType={user} />;
       case 'consultations':
-        return <ConsultationsSection />;
+        return <ConsultationsSection userType={user} />;
       case 'journal':
         return <JournalSection userType={user} />;
       case 'events':
