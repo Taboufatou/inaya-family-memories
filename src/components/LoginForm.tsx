@@ -5,16 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Heart, Baby } from "lucide-react";
+import { useAuth } from '@/hooks/useAuth';
 
-interface LoginFormProps {
-  onLogin: (userType: 'papa' | 'maman' | 'admin') => void;
-}
-
-const LoginForm = ({ onLogin }: LoginFormProps) => {
+const LoginForm = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,16 +24,17 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ 
+          action: 'login',
+          email, 
+          password 
+        }),
       });
 
       const data = await response.json();
 
       if (response.ok && data.success) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        
-        onLogin(data.user.type);
+        login(data.token, data.user);
         toast({
           title: "Connexion réussie",
           description: `Bienvenue ${data.user.type === 'papa' ? 'Papa' : data.user.type === 'maman' ? 'Maman' : 'Administrateur'} ❤️`,
@@ -48,32 +47,12 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
         });
       }
     } catch (error) {
-      // Fallback pour les identifiants de test en cas d'erreur API
-      if (email === 'papa@inaya.zidaf.fr' && password === 'P@paIn@ya2025') {
-        onLogin('papa');
-        toast({
-          title: "Connexion réussie",
-          description: "Bienvenue Papa ❤️",
-        });
-      } else if (email === 'maman@inaya.zidaf.fr' && password === 'M@manIn@ya2025') {
-        onLogin('maman');
-        toast({
-          title: "Connexion réussie", 
-          description: "Bienvenue Maman ❤️",
-        });
-      } else if (email === 'admin@inaya.zidaf.fr' && password === '$S@rrebourg57400$') {
-        onLogin('admin');
-        toast({
-          title: "Connexion administrateur",
-          description: "Accès admin accordé",
-        });
-      } else {
-        toast({
-          title: "Erreur de connexion",
-          description: "Identifiants incorrects",
-          variant: "destructive",
-        });
-      }
+      console.error('Erreur de connexion:', error);
+      toast({
+        title: "Erreur de connexion",
+        description: "Erreur de communication avec le serveur",
+        variant: "destructive",
+      });
     }
     
     setIsLoading(false);
