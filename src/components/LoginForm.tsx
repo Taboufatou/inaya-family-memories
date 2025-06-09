@@ -14,6 +14,27 @@ const LoginForm = () => {
   const { toast } = useToast();
   const { login } = useAuth();
 
+  // Fallback d'authentification pour les tests en développement
+  const fallbackAuth = (email: string, password: string) => {
+    const users = [
+      { email: 'papa@inaya.zidaf.fr', password: 'P@paIn@ya2025', type: 'papa', id: 1 },
+      { email: 'maman@inaya.zidaf.fr', password: 'M@manIn@ya2025', type: 'maman', id: 2 },
+      { email: 'admin@inaya.zidaf.fr', password: '$S@rrebourg57400$', type: 'admin', id: 3 }
+    ];
+
+    const user = users.find(u => u.email === email && u.password === password);
+    if (user) {
+      const token = 'fallback_token_' + Date.now();
+      login(token, {
+        id: user.id,
+        email: user.email,
+        type: user.type as 'papa' | 'maman' | 'admin'
+      });
+      return true;
+    }
+    return false;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -48,11 +69,20 @@ const LoginForm = () => {
       }
     } catch (error) {
       console.error('Erreur de connexion:', error);
-      toast({
-        title: "Erreur de connexion",
-        description: "Erreur de communication avec le serveur",
-        variant: "destructive",
-      });
+      
+      // Fallback en cas d'erreur API (pour les tests en développement)
+      if (fallbackAuth(email, password)) {
+        toast({
+          title: "Connexion réussie (mode test)",
+          description: `Bienvenue ${email.includes('papa') ? 'Papa' : email.includes('maman') ? 'Maman' : 'Administrateur'} ❤️`,
+        });
+      } else {
+        toast({
+          title: "Erreur de connexion",
+          description: "Erreur de communication avec le serveur ou identifiants incorrects",
+          variant: "destructive",
+        });
+      }
     }
     
     setIsLoading(false);
@@ -127,6 +157,7 @@ const LoginForm = () => {
           
           <div className="mt-6 text-center text-sm text-muted-foreground">
             <p>Accès réservé aux parents et administrateur</p>
+            <p className="text-xs mt-2 text-primary">Mode test activé - API PHP en développement</p>
           </div>
         </CardContent>
       </Card>
