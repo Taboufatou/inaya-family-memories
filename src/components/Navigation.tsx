@@ -1,19 +1,20 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Home, Camera, Video, Heart, FileText, Calendar, LogOut, Settings } from "lucide-react";
 import PasswordChangeDialog from './PasswordChangeDialog';
+import AdminPanel from './AdminPanel';
 
 interface NavigationProps {
   activeSection: string;
   setActiveSection: (section: string) => void;
   userType: 'papa' | 'maman' | 'admin';
   onLogout: () => void;
+  token?: string;
 }
 
-const Navigation = ({ activeSection, setActiveSection, userType, onLogout }: NavigationProps) => {
+const Navigation = ({ activeSection, setActiveSection, userType, onLogout, token }: NavigationProps) => {
   const menuItems = [
     { id: 'dashboard', label: 'Accueil', icon: Home },
     { id: 'photos', label: 'Photos', icon: Camera },
@@ -24,7 +25,7 @@ const Navigation = ({ activeSection, setActiveSection, userType, onLogout }: Nav
   ];
 
   return (
-    <Card className="w-64 h-full bg-card border-r border-border flex flex-col">
+    <div className="w-64 bg-card border-r border-border shadow-lg">
       <div className="p-6">
         <h2 className="text-xl font-heading font-bold text-foreground mb-1">
           🪐 INAYASPACE
@@ -36,30 +37,36 @@ const Navigation = ({ activeSection, setActiveSection, userType, onLogout }: Nav
 
       <Separator />
 
-      <nav className="flex-1 p-4 space-y-2">
-        {menuItems.map((item) => {
-          const Icon = item.icon;
-          return (
-            <Button
-              key={item.id}
-              variant={activeSection === item.id ? "default" : "ghost"}
-              className={`w-full justify-start ${
-                activeSection === item.id
-                  ? "bg-primary text-primary-foreground"
-                  : "hover:bg-muted"
-              }`}
-              onClick={() => setActiveSection(item.id)}
-            >
-              <Icon className="h-4 w-4 mr-3" />
-              {item.label}
-            </Button>
-          );
-        })}
+      <nav className="flex-1 p-4">
+        <ul className="space-y-2">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Button
+                key={item.id}
+                variant={activeSection === item.id ? "default" : "ghost"}
+                className={`w-full justify-start ${
+                  activeSection === item.id
+                    ? "bg-primary text-primary-foreground"
+                    : "hover:bg-muted"
+                }`}
+                onClick={() => setActiveSection(item.id)}
+              >
+                <Icon className="h-4 w-4 mr-3" />
+                {item.label}
+              </Button>
+            );
+          })}
+        </ul>
       </nav>
 
       <Separator />
 
-      <div className="p-4 space-y-2">
+      <div className="p-4 border-t border-border space-y-2">
+        {userType === 'admin' && token && (
+          <AdminPanel token={token} />
+        )}
+        
         <PasswordChangeDialog userType={userType} />
         
         <Button
@@ -71,7 +78,7 @@ const Navigation = ({ activeSection, setActiveSection, userType, onLogout }: Nav
           Se déconnecter
         </Button>
       </div>
-    </Card>
+    </div>
   );
 };
 

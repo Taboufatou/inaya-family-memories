@@ -25,31 +25,76 @@ try {
     exit;
 }
 
-// Configuration email O2Switch
+// Configuration email O2Switch avec les nouveaux identifiants
 define('SMTP_HOST', 'pendragon.o2switch.net');
 define('SMTP_PORT', 465);
-define('SMTP_USER', 'noreply@inaya.zidaf.fr'); // À configurer
-define('SMTP_PASS', ''); // À configurer
+define('SMTP_USER', 'noreply@inaya.zidaf.fr');
+define('SMTP_PASS', '$S@rrebourg57400$');
 define('IMAP_HOST', 'pendragon.o2switch.net');
 define('IMAP_PORT', 993);
 
-// Fonction pour valider le token JWT (simple pour cet exemple)
+// Fonction pour valider le token JWT avec gestion de session persistante
 function validateToken($token) {
-    return !empty($token) && strpos($token, '_token') !== false;
+    global $pdo;
+    if (empty($token)) return false;
+    
+    // Vérifier si le token existe en base
+    try {
+        $stmt = $pdo->prepare("SELECT user_id, expires_at FROM user_sessions WHERE token = ? AND expires_at > NOW()");
+        $stmt->execute([$token]);
+        return $stmt->fetch() !== false;
+    } catch (Exception $e) {
+        return false;
+    }
 }
 
-// Fonction pour obtenir l'utilisateur depuis le token
+// Fonction pour obtenir l'utilisateur depuis le token avec session persistante
 function getUserFromToken($token) {
-    if ($token === 'papa_token') return ['id' => 1, 'type' => 'papa'];
-    if ($token === 'maman_token') return ['id' => 2, 'type' => 'maman'];
-    if ($token === 'admin_token') return ['id' => 3, 'type' => 'admin'];
-    return null;
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare("
+            SELECT u.id, u.email, u.user_type 
+            FROM users u 
+            JOIN user_sessions s ON u.id = s.user_id 
+            WHERE s.token = ? AND s.expires_at > NOW()
+        ");
+        $stmt->execute([$token]);
+        return $stmt->fetch();
+    } catch (Exception $e) {
+        return null;
+    }
+}
+
+// Fonction pour créer une session persistante
+function createUserSession($userId) {
+    global $pdo;
+    $token = bin2hex(random_bytes(32));
+    $expiresAt = date('Y-m-d H:i:s', time() + (30 * 24 * 60 * 60)); // 30 jours
+    
+    try {
+        $stmt = $pdo->prepare("INSERT INTO user_sessions (user_id, token, expires_at) VALUES (?, ?, ?)");
+        $stmt->execute([$userId, $token, $expiresAt]);
+        return $token;
+    } catch (Exception $e) {
+        return false;
+    }
+}
+
+// Fonction pour supprimer une session
+function destroyUserSession($token) {
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare("DELETE FROM user_sessions WHERE token = ?");
+        $stmt->execute([$token]);
+        return true;
+    } catch (Exception $e) {
+        return false;
+    }
 }
 
 // Fonction pour envoyer un email
 function sendEmail($to, $subject, $body) {
-    // Configuration PHPMailer pour O2Switch
-    require_once 'vendor/autoload.php'; // Si PHPMailer est installé via Composer
+    require_once 'vendor/autoload.php';
     
     $mail = new PHPMailer\PHPMailer\PHPMailer(true);
     
@@ -79,7 +124,12 @@ function sendEmail($to, $subject, $body) {
 
 // Fonction pour valider la force du mot de passe
 function validatePassword($password) {
-    // Au moins 8 caractères et au moins un caractère spécial (!,$,@,*,%)
     return strlen($password) >= 8 && preg_match('/[!$@*%]/', $password);
+}
+
+// Fonction pour vérifier les droits d'administration
+function isAdmin($token) {
+    $user = getUserFromToken($token);
+    return $user && $user['user_type'] === 'admin';
 }
 ?>

@@ -1,5 +1,5 @@
-
 import React, { useState } from 'react';
+import { AuthProvider, useAuth } from '@/hooks/useAuth';
 import LoginForm from '@/components/LoginForm';
 import Navigation from '@/components/Navigation';
 import Dashboard from '@/components/Dashboard';
@@ -13,45 +13,48 @@ import Footer from '@/components/Footer';
 type UserType = 'papa' | 'maman' | 'admin';
 type ActiveSection = 'dashboard' | 'photos' | 'videos' | 'consultations' | 'journal' | 'events';
 
-const Index = () => {
-  const [user, setUser] = useState<UserType | null>(null);
+const AppContent = () => {
+  const { user, token, logout, loading } = useAuth();
   const [activeSection, setActiveSection] = useState<ActiveSection>('dashboard');
-
-  const handleLogin = (userType: UserType) => {
-    setUser(userType);
-    setActiveSection('dashboard');
-  };
-
-  const handleLogout = () => {
-    setUser(null);
-    setActiveSection('dashboard');
-  };
 
   const handleSectionChange = (section: string) => {
     setActiveSection(section as ActiveSection);
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
   // If not logged in, show login form
-  if (!user) {
-    return <LoginForm onLogin={handleLogin} />;
+  if (!user || !token) {
+    return <LoginForm />;
   }
 
   const renderActiveSection = () => {
+    const sectionProps = { userType: user.type, token, userId: user.id };
+    
     switch (activeSection) {
       case 'dashboard':
-        return <Dashboard userType={user} onSectionChange={handleSectionChange} />;
+        return <Dashboard userType={user.type} onSectionChange={handleSectionChange} />;
       case 'photos':
-        return <PhotosSection userType={user} />;
+        return <PhotosSection {...sectionProps} />;
       case 'videos':
-        return <VideosSection userType={user} />;
+        return <VideosSection {...sectionProps} />;
       case 'consultations':
-        return <ConsultationsSection userType={user} />;
+        return <ConsultationsSection {...sectionProps} />;
       case 'journal':
-        return <JournalSection userType={user} />;
+        return <JournalSection {...sectionProps} />;
       case 'events':
-        return <EventsSection userType={user} />;
+        return <EventsSection {...sectionProps} />;
       default:
-        return <Dashboard userType={user} onSectionChange={handleSectionChange} />;
+        return <Dashboard userType={user.type} onSectionChange={handleSectionChange} />;
     }
   };
 
@@ -60,8 +63,9 @@ const Index = () => {
       <Navigation 
         activeSection={activeSection}
         setActiveSection={handleSectionChange}
-        userType={user}
-        onLogout={handleLogout}
+        userType={user.type}
+        onLogout={logout}
+        token={token}
       />
       
       <div className="flex-1 flex flex-col">
@@ -71,6 +75,14 @@ const Index = () => {
         <Footer />
       </div>
     </div>
+  );
+};
+
+const Index = () => {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 };
 
