@@ -1,37 +1,45 @@
 
 <?php
+// Configuration de l'API INAYA - Windows Server 2022
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Origin: https://inaya.zidaf.fr');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
+header('Access-Control-Allow-Credentials: true');
 
-if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
     exit(0);
 }
 
-// Configuration de la base de données avec les nouveaux paramètres
+// Configuration PostgreSQL - Serveur Local Windows
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'yepe0708_inaya');
-define('DB_USER', 'Taboufatou');
-define('DB_PASS', '$S@rrebourg57400$');
+define('DB_PORT', '5432');
+define('DB_NAME', 'inaya_base');
+define('DB_USER', 'faziz');
+define('DB_PASS', 'VotreMotDePasseFaziz'); // À modifier selon votre configuration
 
 try {
-    $pdo = new PDO("pgsql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+    $dsn = "pgsql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME;
+    $pdo = new PDO($dsn, DB_USER, DB_PASS, [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        PDO::ATTR_EMULATE_PREPARES => false,
+        PDO::ATTR_PERSISTENT => true
+    ]);
 } catch (PDOException $e) {
+    error_log("Erreur PostgreSQL: " . $e->getMessage());
     http_response_code(500);
     echo json_encode(['error' => 'Erreur de connexion à la base de données']);
     exit;
 }
 
-// Configuration email O2Switch avec les nouveaux identifiants
-define('SMTP_HOST', 'pendragon.o2switch.net');
-define('SMTP_PORT', 465);
+// Configuration SMTP Local Windows
+define('SMTP_HOST', 'localhost'); // ou votre serveur SMTP
+define('SMTP_PORT', 587);
 define('SMTP_USER', 'noreply@inaya.zidaf.fr');
 define('SMTP_PASS', '$S@rrebourg57400$');
-define('IMAP_HOST', 'pendragon.o2switch.net');
-define('IMAP_PORT', 993);
+define('SMTP_ENCRYPT', 'tls');
 
 // Fonction pour valider le token JWT avec gestion de session persistante
 function validateToken($token) {
@@ -107,7 +115,7 @@ function sendEmail($to, $subject, $body) {
         $mail->SMTPSecure = 'ssl';
         $mail->Port = SMTP_PORT;
         
-        $mail->setFrom(SMTP_USER, 'INAYASPACE');
+        $mail->setFrom(SMTP_USER, 'INAYA');
         $mail->addAddress($to);
         
         $mail->isHTML(true);

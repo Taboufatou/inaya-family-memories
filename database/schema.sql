@@ -1,6 +1,6 @@
 
--- Base de données complète pour INAYASPACE
--- Configuration pour PostgreSQL chez O2Switch
+-- Base de données complète pour INAYA
+-- Configuration pour PostgreSQL sur Windows Server 2022
 
 -- Table des utilisateurs
 CREATE TABLE IF NOT EXISTS users (
@@ -152,7 +152,7 @@ ON CONFLICT (email) DO NOTHING;
 
 -- Configuration par défaut de l'application
 INSERT INTO app_config (config_key, config_value) VALUES 
-('app_title', 'INAYASPACE'),
+('app_title', 'INAYA'),
 ('app_subtitle', 'L\'espace dédié à notre princesse'),
 ('sections_order', '["dashboard", "photos", "videos", "consultations", "journal", "events"]'),
 ('theme_color', 'gradient-primary')

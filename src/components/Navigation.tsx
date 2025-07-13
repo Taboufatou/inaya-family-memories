@@ -28,7 +28,7 @@ const Navigation = ({ activeSection, setActiveSection, userType, onLogout, token
     <div className="w-64 bg-card border-r border-border shadow-lg">
       <div className="p-6">
         <h2 className="text-xl font-heading font-bold text-foreground mb-1">
-          🪐 INAYASPACE
+          💖 INAYA
         </h2>
         <p className="text-sm text-muted-foreground">
           {userType === 'papa' ? 'Papa' : userType === 'maman' ? 'Maman' : 'Administrateur'}
