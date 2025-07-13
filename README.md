@@ -1,22 +1,23 @@
-# Welcome to your Lovable project
+# INAYASPACE - Application de Gestion Familiale
 
-## Project info
+INAYASPACE est une application web sécurisée dédiée à la gestion et au partage de contenus familiaux (photos, vidéos, journal, consultations médicales, événements).
 
-**URL**: https://lovable.dev/projects/7fa02b27-bb0a-4917-bc9b-49d25a5fb27d
+## Technologies utilisées
 
-## How can I edit this code?
+- **Frontend**: React, TypeScript, Tailwind CSS, Vite
+- **Backend**: PHP avec PostgreSQL
+- **Serveur**: Windows Server 2022 avec IIS et SSL Let's Encrypt
+- **Base de données**: PostgreSQL (inaya_base)
 
-There are several ways of editing your application.
+## Fonctionnalités
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/7fa02b27-bb0a-4917-bc9b-49d25a5fb27d) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- **Authentification sécurisée** avec session persistante
+- **Gestion multi-utilisateurs** (Papa, Maman, Admin)
+- **Photos et Vidéos** avec système de commentaires et likes
+- **Journal familial** avec historique complet
+- **Suivi des consultations médicales**
+- **Calendrier des événements**
+- **Interface d'administration** complète
 
 The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
@@ -60,14 +61,44 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
-## How can I deploy this project?
+## Installation et Déploiement
 
-Simply open [Lovable](https://lovable.dev/projects/7fa02b27-bb0a-4917-bc9b-49d25a5fb27d) and click on Share -> Publish.
+Consultez le guide détaillé : [Guide de déploiement Windows Server 2022](deployment/windows-server-deploy-guide.md)
 
-## Can I connect a custom domain to my Lovable project?
+### Prérequis
+- Windows Server 2022
+- IIS avec PHP 8.x
+- PostgreSQL 15+
+- Certificat SSL Let's Encrypt
 
-Yes, you can!
+### Configuration rapide
+```bash
+# Cloner le projet
+git clone [repository-url]
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+# Configuration base de données
+psql -U postgres -c "CREATE DATABASE inaya_base;"
+psql -U postgres -c "CREATE USER faziz WITH PASSWORD 'VotreMotDePasseFaziz';"
+psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE inaya_base TO faziz;"
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+# Import du schéma
+psql -U faziz -d inaya_base -f database/schema.sql
+```
+
+## Architecture du Projet
+
+### Frontend (React/TypeScript)
+- `src/components/` - Composants réutilisables
+- `src/hooks/` - Hooks personnalisés (auth, API)
+- `src/utils/` - Utilitaires (client API centralisé)
+- `src/pages/` - Pages principales
+
+### Backend (PHP)
+- `api/` - Scripts PHP pour les endpoints
+- `database/` - Schéma et migrations PostgreSQL
+- `deployment/` - Guides et fichiers de configuration
+
+### Configuration
+- `web.config` - Configuration IIS
+- `tailwind.config.ts` - Configuration Tailwind CSS
+- `vite.config.ts` - Configuration Vite

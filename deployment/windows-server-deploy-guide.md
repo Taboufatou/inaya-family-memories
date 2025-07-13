@@ -1,12 +1,20 @@
-# Guide de Déploiement INAYA - Windows Server 2022
+# Guide de Déploiement Simplifié - INAYASPACE sur Windows Server 2022
 
-## Prérequis Vérifiés
+Ce guide vous accompagne étape par étape pour installer INAYASPACE sur votre serveur Windows. **Aucune connaissance technique avancée n'est requise** - suivez simplement les instructions dans l'ordre.
+
+## Vue d'ensemble
+Vous allez installer :
+- **IIS** (serveur web Windows)
+- **PHP** (langage de programmation)
+- **PostgreSQL** (base de données)
+- **SSL Let's Encrypt** (certificat de sécurité HTTPS)
+- **L'application INAYASPACE**
+
+## ✅ Vérification des Prérequis
+Avant de commencer, assurez-vous d'avoir :
 - ✅ Windows Server 2022
-- ✅ IIS avec PHP installé
-- ✅ PostgreSQL installé
-- ✅ Certificat SSL Let's Encrypt (inaya_SSL)
-- ✅ Base de données `inaya_base` créée
-- ✅ Utilisateur PostgreSQL `faziz` avec tous les droits
+- ✅ Droits administrateur sur le serveur
+- ✅ Connexion Internet
 
 ## 1. Configuration PostgreSQL
 
