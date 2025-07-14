@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { Heart, Baby } from "lucide-react";
 import { useAuth } from '@/hooks/useAuth';
+import { apiClient } from '@/utils/apiClient';
 
 const LoginForm = () => {
   const [email, setEmail] = useState('');
@@ -20,30 +21,18 @@ const LoginForm = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/auth.php', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          action: 'login',
-          email, 
-          password 
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        login(data.token, data.user);
+      const response = await apiClient.login(email, password);
+      
+      if (response.success && response.data) {
+        login(response.data.token, response.data.user);
         toast({
           title: "Connexion réussie",
-          description: `Bienvenue ${data.user.type === 'papa' ? 'Papa' : data.user.type === 'maman' ? 'Maman' : 'Administrateur'} ❤️`,
+          description: `Bienvenue ${response.data.user.type === 'papa' ? 'Papa' : response.data.user.type === 'maman' ? 'Maman' : 'Administrateur'} ❤️`,
         });
       } else {
         toast({
           title: "Erreur de connexion",
-          description: data.error || "Identifiants incorrects",
+          description: response.error || "Identifiants incorrects",
           variant: "destructive",
         });
       }

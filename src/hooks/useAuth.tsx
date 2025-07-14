@@ -1,5 +1,6 @@
 
 import { useState, useEffect, createContext, useContext } from 'react';
+import { apiClient } from '@/utils/apiClient';
 
 interface User {
   id: number;
@@ -34,18 +35,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const verifySession = async (authToken: string) => {
     try {
-      const response = await fetch('/api/auth.php', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': authToken
-        },
-        body: JSON.stringify({ action: 'verify' })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setUser(data.user);
+      const response = await apiClient.verifyToken(authToken);
+      
+      if (response.success && response.data) {
+        setUser(response.data);
         setToken(authToken);
       } else {
         // Session expirée
@@ -68,14 +61,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const logout = async () => {
     if (token) {
       try {
-        await fetch('/api/auth.php', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': token
-          },
-          body: JSON.stringify({ action: 'logout' })
-        });
+        await apiClient.logout(token);
       } catch (error) {
         console.error('Erreur lors de la déconnexion:', error);
       }

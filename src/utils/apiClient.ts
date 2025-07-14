@@ -1,4 +1,15 @@
 // Utilitaire pour les appels API centralisés
+interface User {
+  id: number;
+  email: string;
+  type: 'papa' | 'maman' | 'admin';
+}
+
+interface LoginResponse {
+  token: string;
+  user: User;
+}
+
 interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
@@ -58,8 +69,8 @@ class ApiClient {
   }
 
   // Méthodes d'authentification
-  async login(email: string, password: string) {
-    return this.request('/auth.php', {
+  async login(email: string, password: string): Promise<ApiResponse<LoginResponse>> {
+    return this.request<LoginResponse>('/auth.php', {
       method: 'POST',
       body: { action: 'login', email, password }
     });
@@ -73,8 +84,8 @@ class ApiClient {
     });
   }
 
-  async verifyToken(token: string) {
-    return this.request('/auth.php', {
+  async verifyToken(token: string): Promise<ApiResponse<User>> {
+    return this.request<User>('/auth.php', {
       method: 'POST',
       body: { action: 'verify' },
       token
