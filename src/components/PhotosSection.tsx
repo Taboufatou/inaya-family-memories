@@ -8,6 +8,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Camera, Plus, Heart, MessageCircle, Upload, Edit, Trash2, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import HistoryFilter, { FilterOptions } from './HistoryFilter';
+import FileUpload from './FileUpload';
+import { useAuth } from "@/hooks/useAuth";
+import { apiClient } from "@/utils/apiClient";
 
 interface Photo {
   id: string;
@@ -25,28 +28,8 @@ interface PhotosSectionProps {
 }
 
 const PhotosSection = ({ userType }: PhotosSectionProps) => {
-  const [photos, setPhotos] = useState<Photo[]>([
-    {
-      id: '1',
-      title: 'Premier sourire',
-      description: 'Le plus beau sourire du monde ❤️',
-      url: '/placeholder.svg',
-      date: '2024-12-01',
-      likes: 5,
-      comments: ['Magnifique ! - Papa', 'Mon cœur fond - Maman'],
-      author: 'maman'
-    },
-    {
-      id: '2', 
-      title: 'Sieste paisible',
-      description: 'Comme elle est sereine',
-      url: '/placeholder.svg',
-      date: '2024-11-28',
-      likes: 3,
-      comments: ['Si mignonne - Maman'],
-      author: 'papa'
-    }
-  ]);
+  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [filteredPhotos, setFilteredPhotos] = useState<Photo[]>(photos);
   const [filters, setFilters] = useState<FilterOptions>({
@@ -58,13 +41,50 @@ const PhotosSection = ({ userType }: PhotosSectionProps) => {
   const [newPhoto, setNewPhoto] = useState({
     title: '',
     description: '',
-    file: null as File | null
+    file: null as File | null,
+    url: ''
   });
 
   const [editingPhoto, setEditingPhoto] = useState<Photo | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { toast } = useToast();
+  const { token } = useAuth();
+
+  // Charger les photos au montage du composant
+  useEffect(() => {
+    loadPhotos();
+  }, []);
+
+  const loadPhotos = async () => {
+    if (!token) return;
+    
+    try {
+      const response = await apiClient.getPhotos(token);
+      if (response.success && (response.data as any)?.photos) {
+        const formattedPhotos = (response.data as any).photos.map((p: any) => ({
+          id: p.id.toString(),
+          title: p.titre,
+          description: p.description || '',
+          url: p.url,
+          date: p.date_prise || p.date_upload,
+          likes: p.likes || 0,
+          comments: [],
+          author: p.author
+        }));
+        setPhotos(formattedPhotos);
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des photos:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les photos",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Appliquer les filtres
   useEffect(() => {
@@ -114,8 +134,51 @@ const PhotosSection = ({ userType }: PhotosSectionProps) => {
     setFilteredPhotos(filtered);
   }, [photos, filters]);
 
-  const handleAddPhoto = () => {
-    if (!newPhoto.title.trim()) {
+  const handleAddPhoto = async () => {
+    if (!newPhoto.title.trim() || !newPhoto.url || !token) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez entrer un titre et sélectionner une photo",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const photoData = {
+        titre: newPhoto.title,
+        description: newPhoto.description,
+        url: newPhoto.url,
+        date_prise: new Date().toISOString().split('T')[0],
+        lieu: ''
+      };
+
+      const response = await apiClient.addPhoto(token, photoData);
+      
+      if (response.success) {
+        await loadPhotos(); // Recharger la liste
+        setNewPhoto({ title: '', description: '', file: null, url: '' });
+        setIsDialogOpen(false);
+        
+        toast({
+          title: "Photo ajoutée",
+          description: "Votre photo a été ajoutée avec succès ✨"
+        });
+      } else {
+        throw new Error(response.error || 'Erreur lors de l\'ajout');
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'ajouter la photo",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleEditPhoto = async () => {
+    if (!editingPhoto || !editingPhoto.title.trim() || !token) {
       toast({
         title: "Erreur",
         description: "Veuillez entrer un titre pour la photo",
@@ -124,55 +187,61 @@ const PhotosSection = ({ userType }: PhotosSectionProps) => {
       return;
     }
 
-    const photo: Photo = {
-      id: Date.now().toString(),
-      title: newPhoto.title,
-      description: newPhoto.description,
-      url: '/placeholder.svg',
-      date: new Date().toISOString().split('T')[0],
-      likes: 0,
-      comments: [],
-      author: userType as 'papa' | 'maman'
-    };
+    try {
+      const photoData = {
+        titre: editingPhoto.title,
+        description: editingPhoto.description,
+        date_prise: editingPhoto.date,
+        lieu: ''
+      };
 
-    setPhotos([photo, ...photos]);
-    setNewPhoto({ title: '', description: '', file: null });
-    setIsDialogOpen(false);
-    
-    toast({
-      title: "Photo ajoutée",
-      description: "Votre photo a été ajoutée avec succès ✨"
-    });
-  };
-
-  const handleEditPhoto = () => {
-    if (!editingPhoto || !editingPhoto.title.trim()) {
+      const response = await apiClient.updatePhoto(token, parseInt(editingPhoto.id), photoData);
+      
+      if (response.success) {
+        await loadPhotos(); // Recharger la liste
+        setEditingPhoto(null);
+        setIsEditDialogOpen(false);
+        
+        toast({
+          title: "Photo modifiée",
+          description: "Votre photo a été modifiée avec succès ✨"
+        });
+      } else {
+        throw new Error(response.error || 'Erreur lors de la modification');
+      }
+    } catch (error) {
+      console.error('Erreur lors de la modification:', error);
       toast({
         title: "Erreur",
-        description: "Veuillez entrer un titre pour la photo",
+        description: "Impossible de modifier la photo",
         variant: "destructive"
       });
-      return;
     }
-
-    setPhotos(photos.map(photo => 
-      photo.id === editingPhoto.id ? editingPhoto : photo
-    ));
-    setEditingPhoto(null);
-    setIsEditDialogOpen(false);
-    
-    toast({
-      title: "Photo modifiée",
-      description: "Votre photo a été modifiée avec succès ✨"
-    });
   };
 
-  const handleDeletePhoto = (photoId: string) => {
-    setPhotos(photos.filter(photo => photo.id !== photoId));
-    toast({
-      title: "Photo supprimée",
-      description: "La photo a été supprimée avec succès"
-    });
+  const handleDeletePhoto = async (photoId: string) => {
+    if (!token) return;
+
+    try {
+      const response = await apiClient.deletePhoto(token, parseInt(photoId));
+      
+      if (response.success) {
+        await loadPhotos(); // Recharger la liste
+        toast({
+          title: "Photo supprimée",
+          description: "La photo a été supprimée avec succès"
+        });
+      } else {
+        throw new Error(response.error || 'Erreur lors de la suppression');
+      }
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer la photo",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleLike = (photoId: string) => {
@@ -214,7 +283,7 @@ const PhotosSection = ({ userType }: PhotosSectionProps) => {
           </p>
         </div>
         
-        {userType !== 'admin' && (
+        {(
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button className="gradient-primary text-white hover:opacity-90 shadow-lg">
@@ -249,15 +318,15 @@ const PhotosSection = ({ userType }: PhotosSectionProps) => {
                   />
                 </div>
                 
-                <div>
-                  <label className="text-sm font-medium text-foreground">Photo</label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary transition-colors">
-                    <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground">
-                      Cliquez pour sélectionner une photo
-                    </p>
-                  </div>
-                </div>
+                 <div>
+                   <label className="text-sm font-medium text-foreground">Photo</label>
+                   <FileUpload
+                     accept="image/*"
+                     type="image"
+                     onFileSelect={(file) => setNewPhoto({...newPhoto, file})}
+                     onFileUpload={(url) => setNewPhoto({...newPhoto, url})}
+                   />
+                 </div>
                 
                 <Button onClick={handleAddPhoto} className="w-full gradient-primary text-white">
                   Ajouter la photo

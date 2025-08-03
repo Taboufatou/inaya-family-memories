@@ -15,10 +15,23 @@ type ActiveSection = 'dashboard' | 'photos' | 'videos' | 'consultations' | 'jour
 
 const AppContent = () => {
   const { user, token, logout, loading } = useAuth();
-  const [activeSection, setActiveSection] = useState<ActiveSection>('dashboard');
+  const [activeSection, setActiveSection] = useState<ActiveSection>(() => {
+    // Récupérer la section depuis l'URL ou localStorage
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlSection = urlParams.get('section') as ActiveSection;
+    const savedSection = localStorage.getItem('activeSection') as ActiveSection;
+    return urlSection || savedSection || 'dashboard';
+  });
 
   const handleSectionChange = (section: string) => {
-    setActiveSection(section as ActiveSection);
+    const newSection = section as ActiveSection;
+    setActiveSection(newSection);
+    
+    // Sauvegarder dans localStorage et mettre à jour l'URL
+    localStorage.setItem('activeSection', newSection);
+    const url = new URL(window.location.href);
+    url.searchParams.set('section', newSection);
+    window.history.replaceState({}, '', url.toString());
   };
 
   if (loading) {

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,8 @@ import { Heart, Plus, Calendar as CalendarIcon, Clock, MapPin, User, Edit, Trash
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { useAuth } from "@/hooks/useAuth";
+import { apiClient } from "@/utils/apiClient";
 
 interface Consultation {
   id: string;
@@ -28,28 +30,8 @@ interface ConsultationsSectionProps {
 }
 
 const ConsultationsSection = ({ userType }: ConsultationsSectionProps) => {
-  const [consultations, setConsultations] = useState<Consultation[]>([
-    {
-      id: '1',
-      lieu: 'Cabinet Dr. Martin',
-      professionnel: 'Dr. Sophie Martin',
-      date: new Date('2024-12-01'),
-      heure: '14:30',
-      commentaires: 'Première visite, tout va bien. Inaya grandit parfaitement ❤️',
-      likes: 3,
-      author: 'maman'
-    },
-    {
-      id: '2',
-      lieu: 'Clinique des Enfants',
-      professionnel: 'Dr. Pierre Durand',
-      date: new Date('2024-11-15'),
-      heure: '10:00',
-      commentaires: 'Vaccins à jour, poids parfait pour son âge',
-      likes: 2,
-      author: 'papa'
-    }
-  ]);
+  const [consultations, setConsultations] = useState<Consultation[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [newConsultation, setNewConsultation] = useState({
     lieu: '',
@@ -63,9 +45,45 @@ const ConsultationsSection = ({ userType }: ConsultationsSectionProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { toast } = useToast();
+  const { token } = useAuth();
 
-  const handleAddConsultation = () => {
-    if (!newConsultation.lieu.trim() || !newConsultation.professionnel.trim() || !newConsultation.date) {
+  // Charger les consultations au montage du composant
+  useEffect(() => {
+    loadConsultations();
+  }, []);
+
+  const loadConsultations = async () => {
+    if (!token) return;
+    
+    try {
+      const response = await apiClient.getConsultations(token);
+      if (response.success && (response.data as any)?.consultations) {
+        const formattedConsultations = (response.data as any).consultations.map((c: any) => ({
+          id: c.id.toString(),
+          lieu: c.lieu,
+          professionnel: c.professionnel,
+          date: new Date(c.consultation_date),
+          heure: c.heure || '00:00',
+          commentaires: c.commentaires || '',
+          likes: c.likes || 0,
+          author: c.author
+        }));
+        setConsultations(formattedConsultations);
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des consultations:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les consultations",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddConsultation = async () => {
+    if (!newConsultation.lieu.trim() || !newConsultation.professionnel.trim() || !newConsultation.date || !token) {
       toast({
         title: "Erreur",
         description: "Veuillez remplir tous les champs obligatoires",
@@ -74,35 +92,47 @@ const ConsultationsSection = ({ userType }: ConsultationsSectionProps) => {
       return;
     }
 
-    const consultation: Consultation = {
-      id: Date.now().toString(),
-      lieu: newConsultation.lieu,
-      professionnel: newConsultation.professionnel,
-      date: newConsultation.date,
-      heure: newConsultation.heure || '00:00',
-      commentaires: newConsultation.commentaires,
-      likes: 0,
-      author: userType as 'papa' | 'maman'
-    };
+    try {
+      const consultationData = {
+        lieu: newConsultation.lieu,
+        professionnel: newConsultation.professionnel,
+        date: newConsultation.date.toISOString().split('T')[0],
+        heure: newConsultation.heure || '00:00',
+        commentaires: newConsultation.commentaires
+      };
 
-    setConsultations([consultation, ...consultations]);
-    setNewConsultation({
-      lieu: '',
-      professionnel: '',
-      date: undefined,
-      heure: '',
-      commentaires: ''
-    });
-    setIsDialogOpen(false);
-    
-    toast({
-      title: "Consultation ajoutée",
-      description: "La consultation a été enregistrée avec succès ✨"
-    });
+      const response = await apiClient.addConsultation(token, consultationData);
+      
+      if (response.success) {
+        await loadConsultations(); // Recharger la liste
+        setNewConsultation({
+          lieu: '',
+          professionnel: '',
+          date: undefined,
+          heure: '',
+          commentaires: ''
+        });
+        setIsDialogOpen(false);
+        
+        toast({
+          title: "Consultation ajoutée",
+          description: "La consultation a été enregistrée avec succès ✨"
+        });
+      } else {
+        throw new Error(response.error || 'Erreur lors de l\'ajout');
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'ajouter la consultation",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleEditConsultation = () => {
-    if (!editingConsultation || !editingConsultation.lieu.trim() || !editingConsultation.professionnel.trim()) {
+  const handleEditConsultation = async () => {
+    if (!editingConsultation || !editingConsultation.lieu.trim() || !editingConsultation.professionnel.trim() || !token) {
       toast({
         title: "Erreur",
         description: "Veuillez remplir tous les champs obligatoires",
@@ -111,24 +141,62 @@ const ConsultationsSection = ({ userType }: ConsultationsSectionProps) => {
       return;
     }
 
-    setConsultations(consultations.map(consultation => 
-      consultation.id === editingConsultation.id ? editingConsultation : consultation
-    ));
-    setEditingConsultation(null);
-    setIsEditDialogOpen(false);
-    
-    toast({
-      title: "Consultation modifiée",
-      description: "La consultation a été modifiée avec succès ✨"
-    });
+    try {
+      const consultationData = {
+        lieu: editingConsultation.lieu,
+        professionnel: editingConsultation.professionnel,
+        date: editingConsultation.date.toISOString().split('T')[0],
+        heure: editingConsultation.heure,
+        commentaires: editingConsultation.commentaires
+      };
+
+      const response = await apiClient.updateConsultation(token, parseInt(editingConsultation.id), consultationData);
+      
+      if (response.success) {
+        await loadConsultations(); // Recharger la liste
+        setEditingConsultation(null);
+        setIsEditDialogOpen(false);
+        
+        toast({
+          title: "Consultation modifiée",
+          description: "La consultation a été modifiée avec succès ✨"
+        });
+      } else {
+        throw new Error(response.error || 'Erreur lors de la modification');
+      }
+    } catch (error) {
+      console.error('Erreur lors de la modification:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de modifier la consultation",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleDeleteConsultation = (consultationId: string) => {
-    setConsultations(consultations.filter(consultation => consultation.id !== consultationId));
-    toast({
-      title: "Consultation supprimée",
-      description: "La consultation a été supprimée avec succès"
-    });
+  const handleDeleteConsultation = async (consultationId: string) => {
+    if (!token) return;
+
+    try {
+      const response = await apiClient.deleteConsultation(token, parseInt(consultationId));
+      
+      if (response.success) {
+        await loadConsultations(); // Recharger la liste
+        toast({
+          title: "Consultation supprimée",
+          description: "La consultation a été supprimée avec succès"
+        });
+      } else {
+        throw new Error(response.error || 'Erreur lors de la suppression');
+      }
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer la consultation",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleLike = (consultationId: string) => {
@@ -159,7 +227,7 @@ const ConsultationsSection = ({ userType }: ConsultationsSectionProps) => {
           </p>
         </div>
         
-        {userType !== 'admin' && (
+        {(
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button className="gradient-primary text-white hover:opacity-90 shadow-lg">
@@ -402,7 +470,7 @@ const ConsultationsSection = ({ userType }: ConsultationsSectionProps) => {
             <p className="text-muted-foreground mb-4">
               Commencez à enregistrer les consultations d'Inaya
             </p>
-            {userType !== 'admin' && (
+            {(
               <Button onClick={() => setIsDialogOpen(true)} className="gradient-primary text-white">
                 Ajouter la première consultation
               </Button>

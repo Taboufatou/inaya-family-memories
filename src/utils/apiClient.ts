@@ -176,6 +176,22 @@ class ApiClient {
     });
   }
 
+  async updateConsultation(token: string, consultationId: number, consultationData: any) {
+    return this.request('/consultations.php', {
+      method: 'POST',
+      body: { action: 'update', id: consultationId, ...consultationData },
+      token
+    });
+  }
+
+  async deleteConsultation(token: string, consultationId: number) {
+    return this.request('/consultations.php', {
+      method: 'POST',
+      body: { action: 'delete', id: consultationId },
+      token
+    });
+  }
+
   // Méthodes pour les événements
   async getEvents(token: string, filters?: any) {
     return this.request('/events.php', {

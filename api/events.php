@@ -32,7 +32,7 @@ if ($method === 'POST') {
             break;
 
         case 'add':
-            if ($user['user_type'] === 'admin') {
+            if ($user['user_type'] !== 'admin' && $user['user_type'] !== 'papa' && $user['user_type'] !== 'maman') {
                 http_response_code(403);
                 echo json_encode(['error' => 'Non autorisé']);
                 exit;

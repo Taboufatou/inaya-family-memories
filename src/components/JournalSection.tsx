@@ -138,7 +138,7 @@ const JournalSection = ({ userType }: JournalSectionProps) => {
           </p>
         </div>
         
-        {userType !== 'admin' && (
+        {(
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button className="gradient-primary text-white hover:opacity-90 shadow-lg">
@@ -275,7 +275,7 @@ const JournalSection = ({ userType }: JournalSectionProps) => {
             <p className="text-muted-foreground mb-4">
               Commencez à écrire vos premières pensées sur Inaya
             </p>
-            {userType !== 'admin' && (
+            {(
               <Button onClick={() => setIsDialogOpen(true)} className="gradient-primary text-white">
                 Écrire la première note
               </Button>

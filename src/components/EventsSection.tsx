@@ -181,7 +181,7 @@ const EventsSection = ({ userType }: EventsSectionProps) => {
           </p>
         </div>
         
-        {userType !== 'admin' && (
+        {(
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button className="gradient-primary text-white hover:opacity-90 shadow-lg">
