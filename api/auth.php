@@ -1,9 +1,20 @@
 
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
 require_once 'config.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 $input = json_decode(file_get_contents('php://input'), true);
+
+// Vérifier que l'input JSON est valide
+if (json_last_error() !== JSON_ERROR_NONE) {
+    http_response_code(400);
+    echo json_encode(['error' => 'JSON invalide']);
+    exit;
+}
 
 if ($method === 'POST') {
     $action = $input['action'] ?? 'login';

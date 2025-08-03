@@ -2,7 +2,7 @@
 <?php
 // Configuration de l'API INAYA - Windows Server 2022
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: https://inaya.zidaf.fr');
+header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 header('Access-Control-Allow-Credentials: true');
